@@ -1,0 +1,11 @@
+<Project>
+  <!-- Shared settings for every backend project. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Projects target net8.0. When the .NET 8 runtime is missing (dev machines with only .NET 10),
+         run on the next major runtime instead of failing to start. Servers should still install .NET 8. -->
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+</Project>

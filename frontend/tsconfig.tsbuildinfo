@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/api.ts","./src/api/fields.ts","./src/components/Dialogs.tsx","./src/components/HoleForm.tsx","./src/components/ui.tsx","./src/pages/EditProgramPage.tsx","./src/pages/ImportProgramPage.tsx"],"version":"5.6.3"}

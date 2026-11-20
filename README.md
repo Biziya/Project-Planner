@@ -29,7 +29,11 @@ In Dev mode everyone is signed in as `dev.user`, supervisor. To test as a non-su
 `Auth:DevIsSupervisor` to `false` in `appsettings.Development.json`.
 Excel import/export needs the SQL mode (section 2); in sample-data mode those buttons return a clear 501 message.
 
-Tests: `cd backend && dotnet test` (26 tests on HOLEID parsing, validation rules, statuses, interval slots, acQuire mapping).
+Checks (run all of them before calling a change done):
+- Backend: `cd backend && dotnet build && dotnet test` (29 tests on HOLEID parsing, validation rules, statuses, interval slots, acQuire mapping, key suggestion). Warnings are errors in every project (`backend/Directory.Build.props`). `backend/global.json` pins the .NET 10 SDK; projects target net8.0 and roll forward to .NET 10 when the .NET 8 runtime is missing.
+- Front end: `cd frontend && npm run typecheck && npm run lint && npm test` (Vitest + Testing Library; ESLint enforces hooks rules, no `any`, no non-null `!`, type-only imports).
+
+Known gaps against the coding standard are tracked in [docs/STANDARD-AUDIT.md](docs/STANDARD-AUDIT.md).
 
 ## 2. Connect to the databases (Storage:Mode = Sql)
 
@@ -104,8 +108,8 @@ form definition in `api/fields.ts`. Styles: Shared App Design System (`styles/to
 ### API address (front end on another server)
 
 By default the front end calls `/api` on the server that serves it (the API serves the built front end from `wwwroot`).
-If the API runs elsewhere, e.g. `https://10.10.10.10:444`:
-- front end: copy `frontend/.env.example` to `frontend/.env.production`, set `VITE_API_BASE_URL=https://10.10.10.10:444/api`, then `npm run build`;
+If the API runs elsewhere, e.g. `https://api.example.local`:
+- front end: copy `frontend/.env.example` to `frontend/.env.production`, set `VITE_API_BASE_URL=https://api.example.local/api`, then `npm run build`;
 - API: add the front end's address to `Cors:AllowedOrigins` in the settings.
 
 `npm run build` writes the front end into `backend/src/TechnoWells.Api/wwwroot`, so the API serves it on one URL.

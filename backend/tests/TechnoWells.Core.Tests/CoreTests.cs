@@ -355,13 +355,13 @@ public class CoreTests
     }
 
     [Fact]
-    public void Suggested_key_combines_acquire_and_staging()
+    public async Task Suggested_key_combines_acquire_and_staging()
     {
-        var s = new KeySuggestionService(new KeyStaging(1043), new KeyAcquire(true, 1040)).SuggestAsync().Result;
+        var s = await new KeySuggestionService(new KeyStaging(1043), new KeyAcquire(true, 1040)).SuggestAsync();
         Assert.Equal(1044L, s.Suggested);
-        var s2 = new KeySuggestionService(new KeyStaging(1043), new KeyAcquire(true, 2000)).SuggestAsync().Result;
+        var s2 = await new KeySuggestionService(new KeyStaging(1043), new KeyAcquire(true, 2000)).SuggestAsync();
         Assert.Equal(2001L, s2.Suggested);
-        var s3 = new KeySuggestionService(new KeyStaging(null), new KeyAcquire(false, null)).SuggestAsync().Result;
+        var s3 = await new KeySuggestionService(new KeyStaging(null), new KeyAcquire(false, null)).SuggestAsync();
         Assert.Equal(1L, s3.Suggested);
         Assert.False(s3.AcquireIncluded);
     }

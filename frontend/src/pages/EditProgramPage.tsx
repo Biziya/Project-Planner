@@ -41,7 +41,7 @@ export function EditProgramPage({ me }: { me: Me }) {
       setHole(r.hole); setOriginal(JSON.stringify(r.hole)); setSavedStatus(r.hole.status); setIssues(r.issues);
     } catch (e) { fail(e); } finally { setBusy(false); }
   };
-  useEffect(() => { if (!selected && list.length) void open(list[0].holeId); /* first hole on load */ }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const first = list[0]; if (!selected && first) void open(first.holeId); /* first hole on load */ }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startNew = () => {
     if (!confirmDiscard(dirty)) return;

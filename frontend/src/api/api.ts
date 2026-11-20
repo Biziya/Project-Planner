@@ -32,7 +32,7 @@ export interface ImportSummary { rowsRead: number; holesWritten: number; issues:
 export interface Me { name: string; isSupervisor: boolean }
 export interface KeySuggestion { suggested: number; maxInAcquire: number | null; maxInStaging: number | null; acquireIncluded: boolean }
 
-/** API base URL: VITE_API_BASE_URL in .env (e.g. https://10.10.10.10:444/api), otherwise same server (/api). */
+/** API base URL: VITE_API_BASE_URL in .env (e.g. https://api.example.local/api), otherwise same server (/api). */
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 export class ApiError extends Error {

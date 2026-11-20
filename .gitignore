@@ -1,6 +1,26 @@
+# .NET
 bin/
 obj/
-node_modules/
+TestResults/
 *.user
 .vs/
+.idea/
+
+# Local / per-machine settings (copy from the *.example.json files)
+appsettings.Development.json
 appsettings.Production.json
+
+# Frontend
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+
+# Frontend build output that the API used to serve (frontend and API are deployed separately)
+backend/src/TechnoWells.Api/wwwroot/
+
+# Logs
+*.log

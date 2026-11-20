@@ -22,7 +22,7 @@
 
 /* --- Test parameters (select them together with the query to test) ----------- */
 USE ACQMN01_DEV;
-DECLARE @HoleId        NVARCHAR(30)  = 'TEST_Jeanne_2';
+DECLARE @HoleId        NVARCHAR(30)  = 'TEST_HOLE_2';
 DECLARE @Search        NVARCHAR(30)  = NULL;      -- NULL = no filter
 DECLARE @Status        NVARCHAR(30)  = NULL;
 DECLARE @Project       NVARCHAR(30)  = 'ZOOVCH';  -- filter of ListProgramHoles only
