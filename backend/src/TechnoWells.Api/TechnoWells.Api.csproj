@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>TechnoWells.Api</RootNamespace>
+    <!-- Build without the SQL Server / Excel layer: dotnet build -p:OfflineBuild=true -->
+    <DefineConstants Condition="'$(OfflineBuild)' != 'true'">$(DefineConstants);SQL_INFRA</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="acquire-queries.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../TechnoWells.Core/TechnoWells.Core.csproj" />
+    <ProjectReference Include="../TechnoWells.Infrastructure/TechnoWells.Infrastructure.csproj" Condition="'$(OfflineBuild)' != 'true'" />
+  </ItemGroup>
+</Project>
