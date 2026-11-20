@@ -13,11 +13,13 @@ This audit compares the repo with the team coding standard: React + TS strict, V
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Toolchain, lint/test/typecheck, repo hygiene, this audit | **Done** (see "Phase 0 results") |
-| 0b | Separate the frontend and API deployments | To do |
-| 1 | Backend security and all-or-nothing writes | To do |
+| — | **Backend rebuilt as a .NET 10 skeleton (2026-11-20)** | **Done.** The old backend is kept under the git tag `old-backend`. The items under "Backend: security and data safety", "Backend layers", "Other server-side checks" and the SQL interpolation and `LIKE` items are **superseded**: the new code doesn't have them. Each new feature must follow the rules in `backend/README.md` |
+| 0b | Separate the frontend and API deployments | **Mostly done:** the API has no static files and checks CORS at startup, and the frontend builds to `frontend/dist`. Still to do: strict `VITE_API_BASE_URL` parsing, and Windows sign-in across two sites |
+| 1 | Backend security and all-or-nothing writes | **Skeleton done:** Auth/CORS validated at startup, Dev auth only in Development. Writes apply when features are added |
 | 2 | Rerunnable, versioned SQL scripts | To do |
-| 3 | Data-access tidy-up (keeps Dapper) | To do |
-| 4 | Backend structure (thin controllers, split files, tests per area, READMEs) | To do |
+| 3 | Data-access tidy-up (keeps Dapper) | **Superseded:** the new skeleton has `ISqlConnectionFactory` and parameterised Dapper |
+| 4 | Backend structure (thin controllers, split files, tests per area, READMEs) | **Skeleton done:** one type per file, READMEs, 11 tests |
+| — | Frontend on mock data (`npm run dev`) | **Done:** `services/mock`, switched by `VITE_USE_MOCK` |
 | 5 | Frontend structure and boundary validation | To do |
 | 6 | Design system (Tailwind 4 `@theme`, tokens, toast, confirm, table keyboard) | To do |
 | 7 | Never lose work (local drafts, offline) | To do |

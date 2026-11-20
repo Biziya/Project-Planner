@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>TechnoWells.Api</RootNamespace>
-    <!-- Build without the SQL Server / Excel layer: dotnet build -p:OfflineBuild=true -->
-    <DefineConstants Condition="'$(OfflineBuild)' != 'true'">$(DefineConstants);SQL_INFRA</DefineConstants>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
   <ItemGroup>
-    <None Update="acquire-queries.sql" CopyToOutputDirectory="PreserveNewest" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../TechnoWells.Core/TechnoWells.Core.csproj" />
-    <ProjectReference Include="../TechnoWells.Infrastructure/TechnoWells.Infrastructure.csproj" Condition="'$(OfflineBuild)' != 'true'" />
-  </ItemGroup>
+
 </Project>

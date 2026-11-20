@@ -1,138 +1,64 @@
 # TechnoWells Drillhole App
 
-Web app to prepare techno/hydro drillholes, check them and load them into acQuire (ACQMN01).
-It implements the *TechnoWells Drillhole App – Specification v1.0*; requirement and rule IDs
-(X-01, S-03, V-07…) in the code refer to that document.
+A web app to prepare techno/hydro drillholes, check them, and load them into acQuire (ACQMN01).
+It implements the *TechnoWells Drillhole App – Specification v1.0*. Rule IDs in the code (V-01, X-01…) refer to that document.
 
 ```
-backend/   .NET 8 – API, business rules, SQL Server and Excel layer, unit tests
-frontend/  React 18 + TypeScript (Vite) – Edit program and Import program pages
-database/  technowells_staging.sql – staging database, lookup views, check and load views
+frontend/  React 18 + TypeScript (Vite): the Edit program and Import program pages. Runs on mock data for now.
+backend/   .NET 10 Web API skeleton: Windows/Dev sign-in, Dapper + SQL Server, tests. Features are added step by step.
+database/  SQL scripts for the staging schema (from the first version; review them before using).
+docs/      STANDARD-AUDIT.md: what still differs from the team coding standard.
 ```
 
-## 1. Run it in 5 minutes (sample data, no database)
+The frontend and the API are **two separate sites**. The frontend calls the API at `VITE_API_BASE_URL`, and the API allows that address in `Cors:AllowedOrigins`.
 
-Requirements: .NET 8 SDK, Node.js 20+.
+## Run the frontend (mock data, no backend needed)
+
+You need Node.js 20 or later.
 
 ```bash
-# API with in-memory sample data (Storage:Mode = InMemory, Auth:Mode = Dev)
-cd backend/src/TechnoWells.Api
-dotnet run                      # http://localhost:5080 – serves the built front end too
-
-# Front end with hot reload (optional, second terminal)
 cd frontend
 npm install
-npm run dev                     # http://localhost:5173, /api is proxied to :5080
+npm run dev          # http://localhost:5173 (mock data)
 ```
 
-In Dev mode everyone is signed in as `dev.user`, supervisor. To test as a non-supervisor, set
-`Auth:DevIsSupervisor` to `false` in `appsettings.Development.json`.
-Excel import/export needs the SQL mode (section 2); in sample-data mode those buttons return a clear 501 message.
+- **Mock data:** `npm run dev` uses `.env.mock` (`VITE_USE_MOCK=true`). The app then works on in-memory sample holes and drafts from [frontend/src/services/mock](frontend/src/services/mock/README.md).
+- **Badge:** a **Mock data** badge shows in the sidebar while mock data is on.
+- **Resets:** changes are lost when the page reloads.
+- **Not available with mock data:** Excel import and export.
 
-Checks (run all of them before calling a change done):
-- Backend: `cd backend && dotnet build && dotnet test` (29 tests on HOLEID parsing, validation rules, statuses, interval slots, acQuire mapping, key suggestion). Warnings are errors in every project (`backend/Directory.Build.props`). `backend/global.json` pins the .NET 10 SDK; projects target net8.0 and roll forward to .NET 10 when the .NET 8 runtime is missing.
-- Front end: `cd frontend && npm run typecheck && npm run lint && npm test` (Vitest + Testing Library; ESLint enforces hooks rules, no `any`, no non-null `!`, type-only imports).
+## Run the backend
 
-Known gaps against the coding standard are tracked in [docs/STANDARD-AUDIT.md](docs/STANDARD-AUDIT.md).
+You need the .NET 10 SDK.
 
-## 2. Connect to the databases (Storage:Mode = Sql)
-
-1. **Staging database**: run `database/technowells_staging.sql` on a test instance (creates, in the `stg` schema of the acQuire database – `ACQMN01_DEV` for tests –
-   the objects `stg.STG_COLLAR`, `stg.STG_GEODETAILS`, supporting tables, `stg.v_LOOKUP`, check and load views).
-   Fill the `TODO` lookups (sub purpose, people, lithology) once their sources are known.
-2. **Settings**: copy `backend/src/TechnoWells.Api/appsettings.Sql.example.json` to `appsettings.Production.json`
-   (not committed) and set the connection strings.
-3. **acQuire queries**: `backend/src/TechnoWells.Api/acquire-queries.sql` holds the queries tested on ACQMN01_DEV
-   (one `-- @query Name` block per query, test parameters for SSMS at the top). It is read at start-up through
-   `"AcquireSql": { "QueriesFile": "acquire-queries.sql" }` (already in `appsettings.json`).
-   - Reads: Edit program list, hole columns, attributes, GTN, version (object tracking date `QLOH_OBJECTSTATUS.UPDDATE_QLOH`),
-     existence, nearby holes (all coordinate sets of the same grid), KEY checks.
-   - **Writes are active**: "Send to acQuire" and Edit program saves write into the database of the `Acquire`
-     connection string. Every acQuire table is keyed by HOLEID + PROJECTCODE. To switch writing off,
-     turn the write queries into comments: sending is then refused with a message.
-   - For tests, start from `appsettings.Development.example.json` (Sql mode on ACQMN01_DEV, test HOLEIDs starting with T).
-4. **Excel layout** (`ExcelTemplate` section): provisional until the users' template arrives (spec 8.1).
-   Replace `HoleColumns`, `IntervalColumns`, `GtnColumns` with the real headers; no code change needed.
-   Bump `Version` whenever the layout changes (old files are then refused, B-02).
-5. **Sign-in**: host on IIS with Windows Authentication, set `Auth:Mode` = `Windows` and
-   `Auth:SupervisorGroup` to the Active Directory group of supervisors.
-6. **Service account**: the app pool identity needs read/write on the `stg` schema and the rights agreed for acQuire
-   (see section 6 of the SQL script).
-
-## 3. Settings that are still open in the spec (no code change needed)
-
-| Setting | Spec | Where |
-| --- | --- | --- |
-| Mandatory fields | V-01 | `Validation:MandatoryFields` (+ `MANDATORY` in `frontend/src/api/fields.ts` for the red asterisks) |
-| Sub purpose → HOLEID letter | V-04 | `Validation:SubPurposeLetters` |
-| Z limits, minimum distance between holes | V-06, V-10 | `Validation:ZMin`, `ZMax`, `MinDistance` |
-| KEY unique, KEY a whole number | V-15 | `Validation:KeyMustBeUnique`, `Validation:KeyMustBeNumeric` |
-| Suggested KEY (highest KEY of all holes + 1, shown under the KEY field, never filled in) | — | `AcquireSql:MaxKey` (all holes in acQuire, any status) + drafts in `stg.STG_COLLAR` |
-| GTN: lithology and CaCO3 risk on the same intervals, or not | V-12, 6.5 | `Validation:GtnSameIntervals` (true = same intervals; false = fallback, a row may carry one attribute and overlaps are checked per attribute) |
-| HOLEID pattern, project letters | 6.1 | `HoleId:Pattern`, `HoleId:ProjectCodes` |
-| Grid / prospect polygons | V-05 | implement `ISpatialChecker` and register it instead of `NoSpatialChecker` |
-
-## 4. How the code is organised
-
-Same layering as the team's other APIs: **Controllers → Services → Repositories (interfaces + Dapper implementations)**.
-
-```
-backend/src/
-  TechnoWells.Api/
-    Controllers/            API endpoints (spec section 9): Holes, Staging, Send, Excel, Lookups, Validation, Me
-    Repositories/InMemory/  sample-data repositories (Storage:Mode = InMemory)
-    Auth/                   Windows (IIS) / Dev sign-in, Supervisor role
-    Program.cs              configuration, dependency injection, CORS
-  TechnoWells.Core/         no external package
-    Services/               StagingService, SendService, ProgramService, ImportService, ValidationDependencies
-    Services/Interfaces/    ICurrentUser, IExcelTemplateService
-    Repositories/Interfaces/ IStagingRepository, IAcquireReadRepository, IAcquireWriteRepository,
-                            ILookupRepository, IAuditRepository
-    Model/                  Hole, intervals, GTN, acQuire mapping, interval slots, repository records
-    Validation/             rules V-01…V-17 (ValidationEngine), settings, IHoleDirectory
-    HoleIds/  Workflow/     HOLEID parser, status transitions
-  TechnoWells.Infrastructure/
-    Repositories/           Dapper + SQL Server: StagingRepository, AcquireReadRepository, AcquireWriteRepository,
-                            LookupRepository, HoleDirectoryRepository, AuditRepository, SqlConnections
-    Services/               ExcelTemplateService (ClosedXML)
-    DependencyInjection.cs  registration for Storage:Mode = Sql
+```bash
+cd backend/src/TechnoWells.Api
+copy appsettings.Development.example.json appsettings.Development.json   # first time only
+dotnet run           # http://localhost:5080
 ```
 
-The acQuire write repository takes an application lock on each HOLEID (`sp_getapplock`) and checks existence or
-version in the same transaction, so two users can never import the same HOLEID (D-06, AT-05).
+There are only two endpoints so far:
+- `GET /api/health`: open to everyone; reports whether the database is reachable.
+- `GET /api/me`: the signed-in user.
 
-Front end (`frontend/src`): `pages/EditProgramPage.tsx`, `pages/ImportProgramPage.tsx`, the shared form
-`components/HoleForm.tsx` (same component in the pop-up and the side panel), pop-ups in `components/Dialogs.tsx`,
-form definition in `api/fields.ts`. Styles: Shared App Design System (`styles/tokens.css`, `styles/bundle.css`).
+See [backend/README.md](backend/README.md) for the settings and how to add a feature.
 
-### API address (front end on another server)
+To run the frontend against the API instead of mock data, use `npm run dev:api`. It proxies `/api` to `:5080`.
 
-By default the front end calls `/api` on the server that serves it (the API serves the built front end from `wwwroot`).
-If the API runs elsewhere, e.g. `https://api.example.local`:
-- front end: copy `frontend/.env.example` to `frontend/.env.production`, set `VITE_API_BASE_URL=https://api.example.local/api`, then `npm run build`;
-- API: add the front end's address to `Cors:AllowedOrigins` in the settings.
+## Checks
 
-`npm run build` writes the front end into `backend/src/TechnoWells.Api/wwwroot`, so the API serves it on one URL.
+Run all of these before calling a change done:
 
-## 5. Notes for later
+- **Backend:** `cd backend && dotnet build && dotnet test`. Warnings count as errors.
+- **Frontend:** `cd frontend && npm run typecheck && npm run lint && npm test`.
 
-| Topic | Note |
-| --- | --- |
-| Search radius / minimum distance | V-10 distance (`Validation:MinDistance`, 10 m for tests) to agree with the users. V-13 (same coordinates) is a warning for now (`Validation:SameCoordinatesLevel`). |
-| HOLELOCATION.STARTDATE / ENDDATE | Can hold the planned drilling dates. Not the responsibility of this app's users for now; to add later (field, mapping, InsertLocation/UpdateLocation). |
-| HOLEID format | Real HOLEIDs (e.g. `INZO_0001_1`) differ from the spec pattern: adjust `HoleId:Pattern` once the format is confirmed. |
-| Grid limits | Checked by the database when coordinates are written (the send fails for that hole with the database message). Later: the same check in the app (V-05) to warn while typing. |
-| Edit program reads | Kept as they are for now (joins on HOLEID only). |
+## History
 
-## 6. Status of this starter
+The first full backend has been replaced by the new skeleton. It had business rules, validation V-01…V-17, the acQuire read/write SQL and the Excel import. It is kept in git under the tag `old-backend`.
 
-| Part | Status |
-| --- | --- |
-| Core rules and services | Built and tested (26 unit tests) |
-| API controllers | Built and run against the front end (same routes as spec section 9) |
-| API in sample-data mode | Built and run; send, conflicts, version check, statuses checked end to end |
-| Front end | Built; both pages and pop-ups checked in a browser against the API |
-| SQL Server and Excel layer | Written, syntax-checked, **not yet compiled against its packages** – first `dotnet build` with NuGet access confirms it |
-| acQuire read/write SQL | To fill with the acQuire administrator (section 2.3) |
-| Excel column layout | Provisional until the users' template arrives |
-| Not built yet | X-12 batch validation UI, F-06 / P-03 copy, A-07 past import sessions page |
+To look at it again:
+
+```bash
+git show old-backend:README.md
+git checkout old-backend -- backend   # restores the old code into the working tree
+```

@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using TechnoWells.Api.Auth;
+using TechnoWells.Api.Models.Me;
 
 namespace TechnoWells.Api.Controllers;
 
-[Route("api/me")]
-public sealed class MeController(ICurrentUser user) : ApiControllerBase
+public sealed class MeController(ICurrentUser currentUser) : ApiControllerBase
 {
-    /// <summary>Signed-in user and role (Supervisor or not).</summary>
+    /// <summary>GET /api/me — who the server says you are.</summary>
     [HttpGet]
-    public IActionResult Get() => Ok(new { user.Name, user.IsSupervisor });
+    public MeResponse Get() => new(currentUser.Name, currentUser.IsSupervisor);
 }
