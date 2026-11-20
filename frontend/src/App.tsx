@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { api, ApiError, type Me } from './api/api';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { api, type Me } from './api/api';
 import { Sidebar, type Page } from './components/layout/Sidebar';
+import { Toaster } from './components/toast/Toaster';
+import { errorText, toast } from './components/toast/toast';
 import { useApiStatus } from './hooks/useApiStatus';
-import { EditProgramPage } from './pages/EditProgramPage';
+import { EditProgramPage, type LeaveGuard } from './pages/EditProgramPage';
 import { ImportProgramPage } from './pages/ImportProgramPage';
 
 const pageFromHash = (): Page => (window.location.hash === '#import' ? 'import' : 'edit');
@@ -22,14 +24,22 @@ function writeCollapsed(value: boolean): void {
 export default function App() {
   const [page, setPage] = useState<Page>(pageFromHash);
   const [me, setMe] = useState<Me | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<boolean>(readCollapsed);
   const status = useApiStatus();
+  const leaveGuard: LeaveGuard = useRef(null);
+
+  /** A page link asks first when the Edit page has unsaved changes. */
+  const navigate = (e: MouseEvent<HTMLAnchorElement>, target: Page) => {
+    const ask = leaveGuard.current;
+    if (!ask || target === page) return;
+    e.preventDefault();
+    ask(() => { window.location.hash = target; });
+  };
 
   useEffect(() => {
     const onHash = () => setPage(pageFromHash());
     window.addEventListener('hashchange', onHash);
-    api.me().then(setMe).catch((e) => setError(e instanceof ApiError ? e.message : 'Sign-in failed.'));
+    api.me().then(setMe).catch((e) => toast.error(errorText('Sign-in failed', e)));
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
@@ -43,14 +53,14 @@ export default function App() {
   return (
     <div className="sa tw-app">
       <div className="sa-shell">
-        <Sidebar page={page} me={me} status={status} collapsed={collapsed} onToggle={toggleSidebar} />
+        <Sidebar page={page} me={me} status={status} collapsed={collapsed} onToggle={toggleSidebar} onNavigate={navigate} />
         <div className="sa-main">
-          <main className="sa-content">
-            {error && <div role="alert" className="sa-note sa-note--danger">{error}</div>}
-            {me && (page === 'edit' ? <EditProgramPage me={me} /> : <ImportProgramPage me={me} />)}
+          <main className={`sa-content${page === 'edit' ? ' bg-white' : ''}`}>
+            {me && (page === 'edit' ? <EditProgramPage me={me} leaveGuard={leaveGuard} /> : <ImportProgramPage me={me} />)}
           </main>
         </div>
       </div>
+      <Toaster />
     </div>
   );
 }

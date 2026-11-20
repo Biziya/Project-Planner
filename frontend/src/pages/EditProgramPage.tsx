@@ -1,204 +1,208 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, ApiError, emptyHole, type Hole, type HoleSummary, type Issue, type Me } from '../api/api';
-import { HoleForm } from '../components/HoleForm';
-import { HelpButton } from '../components/layout/HelpButton';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { api, emptyHole, type Hole, type HoleSummary, type Issue, type Me, type SaveResponse } from '../api/api';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ConflictDialog, GtnImportDialog } from '../components/Dialogs';
-import { Banner, Icon, LookupSelect, StatusChip, confirmDiscard, type Notice } from '../components/ui';
+import { HoleForm } from '../components/HoleForm';
+import { SheetsLook } from '../components/sheets';
+import { errorText, toast } from '../components/toast/toast';
+import { HoleFilters, NO_FILTERS, type Filters } from './edit/HoleFilters';
+import { HoleList } from './edit/HoleList';
+import { PageHeader } from './edit/PageHeader';
 
-type Selected = { holeId: string } | { holeId: 'new' } | null;
+type Selected = { holeId: string } | null;   // holeId 'new' = a new drillhole not yet imported
 
-export function EditProgramPage({ me }: { me: Me }) {
-  const [filters, setFilters] = useState({ search: '', status: '', purpose: '', target: '' });
-  const [list, setList] = useState<HoleSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [listOpen, setListOpen] = useState(true);
+/** Runs `go` now, or after the user agrees to drop unsaved changes. Set by the Edit page while it has changes. */
+export type LeaveGuard = MutableRefObject<((go: () => void) => void) | null>;
+
+/** "Could not save IZO_446: 3 fields need attention", or the server's own reason. */
+function refusedText(what: string, r: SaveResponse) {
+  const errors = r.issues.filter((i) => i.level === 'Error').length;
+  if (errors > 0) return `${what}: ${errors} ${errors === 1 ? 'field needs' : 'fields need'} attention`;
+  return `${what}: ${r.message ?? 'refused by acQuire'}`;
+}
+
+export function EditProgramPage({ me, leaveGuard }: { me: Me; leaveGuard?: LeaveGuard }) {
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [holes, setHoles] = useState<HoleSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<Selected>(null);
   const [hole, setHole] = useState<Hole | null>(null);
-  const [original, setOriginal] = useState<string>('');
+  const [original, setOriginal] = useState('');
   const [savedStatus, setSavedStatus] = useState<Hole['status']>('PROJECT');
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
+  const [isBusy, setIsBusy] = useState(false);
   const [conflict, setConflict] = useState<{ mine: Hole; theirs: Hole } | null>(null);
-  const [gtnOpen, setGtnOpen] = useState(false);
+  const [isGtnImportOpen, setIsGtnImportOpen] = useState(false);
+  const [pendingDiscard, setPendingDiscard] = useState<(() => void) | null>(null);
 
-  const dirty = hole !== null && JSON.stringify(hole) !== original;
-  const fail = (e: unknown) => setNotice({ kind: 'danger', text: e instanceof ApiError ? e.message : 'Something went wrong. Try again.' });
+  const isNew = selected?.holeId === 'new';
+  const isDirty = hole !== null && JSON.stringify(hole) !== original;
 
-  // ---------------- list
+  /** Runs the action now, or after the user agrees to discard unsaved changes. */
+  const guardUnsaved = (action: () => void) => (isDirty ? setPendingDiscard(() => action) : action());
+
+  // Leaving the page with changes: the sidebar links ask through the same dialog; reload / closing the tab gets the browser prompt.
+  useEffect(() => {
+    if (!isDirty) return;
+    if (leaveGuard) leaveGuard.current = (go) => setPendingDiscard(() => go);
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      if (leaveGuard) leaveGuard.current = null;
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [isDirty, leaveGuard]);
+
   const loadList = useCallback(async () => {
-    setLoading(true);
-    try { setList(await api.listHoles(filters)); } catch (e) { fail(e); } finally { setLoading(false); }
+    setIsLoading(true);
+    try { setHoles(await api.listHoles(filters)); } catch (e) { toast.error(errorText('Could not load the hole list', e)); } finally { setIsLoading(false); }
   }, [filters]);
   useEffect(() => { const t = setTimeout(loadList, 250); return () => clearTimeout(t); }, [loadList]);
 
-  // ---------------- open a hole
-  const open = async (holeId: string) => {
-    if (!confirmDiscard(dirty)) return;
-    setBusy(true);
-    try {
-      const r = await api.getHole(holeId);
-      setSelected({ holeId });
-      setHole(r.hole); setOriginal(JSON.stringify(r.hole)); setSavedStatus(r.hole.status); setIssues(r.issues);
-    } catch (e) { fail(e); } finally { setBusy(false); }
+  const showHole = (holeId: string, r: { hole: Hole; issues: Issue[] }) => {
+    setSelected({ holeId }); setHole(r.hole); setOriginal(JSON.stringify(r.hole)); setSavedStatus(r.hole.status); setIssues(r.issues);
   };
-  useEffect(() => { const first = list[0]; if (!selected && first) void open(first.holeId); /* first hole on load */ }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reloadHole = async (holeId: string) => showHole(holeId, await api.getHole(holeId));
 
-  const startNew = () => {
-    if (!confirmDiscard(dirty)) return;
+  const openHole = (holeId: string) => guardUnsaved(async () => {
+    setIsBusy(true);
+    try { await reloadHole(holeId); } catch (e) { toast.error(errorText(`Could not open ${holeId}`, e)); } finally { setIsBusy(false); }
+  });
+  // Open the first hole of the list on load.
+  useEffect(() => { const first = holes[0]; if (!selected && first) openHole(first.holeId); }, [holes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startNewHole = () => guardUnsaved(() => {
     const h = { ...emptyHole(), status: 'Preparation' as const };
     setSelected({ holeId: 'new' }); setHole(h); setOriginal(JSON.stringify(h)); setSavedStatus('Preparation'); setIssues([]);
-  };
+  });
 
-  // ---------------- live checks (debounced) while editing
+  // Live checks (debounced) while editing.
   const checkTimer = useRef<number>();
   useEffect(() => {
-    if (!hole || !dirty) return;
+    if (!hole || !isDirty) return;
     window.clearTimeout(checkTimer.current);
     checkTimer.current = window.setTimeout(async () => {
       try { setIssues((await api.validate(hole)).issues); } catch { /* keep previous issues */ }
     }, 600);
-  }, [hole, dirty]);
+  }, [hole, isDirty]);
 
-  // ---------------- actions
-  const afterSave = async (holeId: string, text: string) => {
-    setNotice({ kind: 'success', text });
+  const afterSave = async (holeId: string, message: string | null) => {
+    if (message) toast.success(message);
     await loadList();
-    await openFresh(holeId);
-  };
-  const openFresh = async (holeId: string) => {
-    const r = await api.getHole(holeId);
-    setSelected({ holeId }); setHole(r.hole); setOriginal(JSON.stringify(r.hole)); setSavedStatus(r.hole.status); setIssues(r.issues);
+    await reloadHole(holeId);
   };
 
-  const save = async () => {
-    if (!hole) return;
-    setBusy(true);
+  /** Saves the form; true when it was saved. */
+  const saveHole = async (): Promise<boolean> => {
+    if (!hole) return false;
+    const id = hole.holeId || 'the new drillhole';
+    setIsBusy(true);
     try {
-      if (selected?.holeId === 'new') {
+      if (isNew) {
         const r = await api.createDirect(hole);
         setIssues(r.issues);
-        if (r.saved) await afterSave(hole.holeId, `${hole.holeId} checked and imported to acQuire with status PROJECT.`);
-        else setNotice({ kind: 'danger', text: r.message ?? 'The hole was not imported.' });
-        return;
+        if (r.saved) { await afterSave(hole.holeId, `${hole.holeId} imported to acQuire as PROJECT`); return true; }
+        toast.error(refusedText(`Could not import ${id}`, r));
+        return false;
       }
       const r = await api.saveHole(hole);
       setIssues(r.issues);
-      if (r.saved) await afterSave(hole.holeId, `${hole.holeId} saved to acQuire.`);
-      else if (r.inAcquire) setConflict({ mine: r.mine ?? hole, theirs: r.inAcquire });
-      else setNotice({ kind: 'danger', text: r.message ?? 'The hole was not saved.' });
-    } catch (e) { fail(e); } finally { setBusy(false); }
+      if (r.saved) { await afterSave(hole.holeId, `${hole.holeId} saved`); return true; }
+      if (r.inAcquire) setConflict({ mine: r.mine ?? hole, theirs: r.inAcquire });
+      else toast.error(refusedText(`Could not save ${id}`, r));
+      return false;
+    } catch (e) { toast.error(errorText(`Could not save ${id}`, e)); return false; } finally { setIsBusy(false); }
   };
 
   const keepMine = async () => {
     if (!conflict) return;
-    setBusy(true);
+    const id = conflict.mine.holeId;
+    setIsBusy(true);
     try {
       const r = await api.keepMine(conflict.mine);
       setConflict(null);
-      if (r.saved) await afterSave(conflict.mine.holeId, `${conflict.mine.holeId}: your version was saved over acQuire.`);
-      else { setIssues(r.issues); setNotice({ kind: 'danger', text: r.message ?? 'Not saved.' }); }
-    } catch (e) { fail(e); } finally { setBusy(false); }
+      if (r.saved) await afterSave(id, `${id}: your version was saved over acQuire`);
+      else { setIssues(r.issues); toast.error(refusedText(`Could not save ${id}`, r)); }
+    } catch (e) { toast.error(errorText(`Could not save ${id}`, e)); } finally { setIsBusy(false); }
   };
   const keepTheirs = async () => {
     if (!conflict) return;
     const id = conflict.mine.holeId;
     setConflict(null);
-    await openFresh(id);
-    setNotice({ kind: 'success', text: `${id}: the acQuire version was kept; the form shows it again.` });
+    try { await reloadHole(id); toast.success(`${id}: the acQuire version was kept`); }
+    catch (e) { toast.error(errorText(`Could not reload ${id}`, e)); }
   };
 
   const changeStatus = async (action: 'validate' | 'rollback') => {
     if (!hole) return;
-    setBusy(true);
+    const id = hole.holeId;
+    setIsBusy(true);
     try {
-      const r = action === 'validate' ? await api.validateForDrilling(hole.holeId) : await api.rollback(hole.holeId);
-      if (r.saved) await afterSave(hole.holeId, action === 'validate'
-        ? `${hole.holeId} validated for drilling: status is now PROGRAM_VALIDATED.`
-        : `${hole.holeId} rolled back to picket: status is now PROJECT.`);
-      else { setIssues(r.issues); setNotice({ kind: 'danger', text: r.message ?? 'Not changed.' }); }
-    } catch (e) { fail(e); } finally { setBusy(false); }
+      const r = action === 'validate' ? await api.validateForDrilling(id) : await api.rollback(id);
+      if (r.saved) await afterSave(id, action === 'validate' ? `${id} validated for drilling` : `${id} rolled back to PROJECT`);
+      else { setIssues(r.issues); toast.error(refusedText(action === 'validate' ? `Could not validate ${id}` : `Could not roll back ${id}`, r)); }
+    } catch (e) { toast.error(errorText(action === 'validate' ? `Could not validate ${id}` : `Could not roll back ${id}`, e)); } finally { setIsBusy(false); }
   };
 
-  const setFilter = (k: keyof typeof filters, v: string) => setFilters((f) => ({ ...f, [k]: v }));
+  // Ctrl+S / Cmd+S saves the open hole.
+  useEffect(() => {
+    if (!hole) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 's') return;
+      e.preventDefault();
+      if (isDirty && !isBusy && !pendingDiscard && !conflict) void saveHole();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
+
+  // The GTN import dialog shows its own result toast; the open hole is reloaded to show its new GTN rows.
+  const onGtnImported = async () => {
+    if (hole && !isNew) await reloadHole(hole.holeId);
+  };
 
   return (
     <>
-      <div className="sa-pagehead" style={{ flexWrap: 'wrap' }}>
-        <div>
-          <h1>Edit program</h1>
-          <p>Holes in acQuire in PROJECT or PROGRAM_TOVALIDATE. Pick one on the left; its form fills the rest of the page.</p>
-        </div>
-        <div className="sa-pagehead__actions">
-          <button className="sa-btn sa-btn--secondary" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>{listOpen ? 'Hide list' : 'Show list'}</button>
-          <button className="sa-btn sa-btn--primary" onClick={startNew}><Icon name="plus" />New drillhole</button>
-          <HelpButton page="edit" />
-        </div>
-      </div>
+      <SheetsLook.Provider value>
+        <PageHeader onNewHole={startNewHole} />
 
-      <Banner notice={notice} onClose={() => setNotice(null)} />
-
-      <div className="sa-split tw-split">
-        {listOpen && (
-          <div className="sa-split__list" style={{ width: 'var(--size-filter-panel)', gap: 12 }}>
-            <div className="sa-filterbar tw-filtercol" role="search">
-              <label className="sa-field"><span className="sa-field__label">Search HOLEID</span>
-                <span className="sa-input"><Icon name="search" /><input type="search" placeholder="e.g. PZO_448" value={filters.search}
-                  onChange={(e) => setFilter('search', e.target.value)} style={{ fontFamily: 'var(--font-mono)' }} /></span></label>
-              <label className="sa-field"><span className="sa-field__label">Status</span>
-                <span className="sa-input"><select value={filters.status} onChange={(e) => setFilter('status', e.target.value)}>
-                  <option value="">All</option><option>PROJECT</option><option>PROGRAM_TOVALIDATE</option></select></span></label>
-              <label className="sa-field"><span className="sa-field__label">Purpose</span>
-                <LookupSelect id="L06" label="Purpose" value={filters.purpose || null} onChange={(v) => setFilter('purpose', v ?? '')} /></label>
-              <label className="sa-field"><span className="sa-field__label">Target</span>
-                <LookupSelect id="L08" label="Target" value={filters.target || null} onChange={(v) => setFilter('target', v ?? '')} /></label>
-              <button className="sa-btn sa-btn--tertiary sa-btn--sm" style={{ alignSelf: 'flex-start' }}
-                onClick={() => setFilters({ search: '', status: '', purpose: '', target: '' })}>Clear filters</button>
-            </div>
-            <section className="sa-tablecard" style={{ flex: 1 }}>
-              <div className="sa-tablecard__head"><span className="sa-tablecard__count" style={{ margin: 0 }}>{loading ? 'Loading…' : `${list.length} holes`}</span></div>
-              <div className="sa-tablewrap">
-                <table className="sa-table">
-                  <thead><tr><th className="is-sorted">HOLEID <span className="sort">↑</span></th><th>Status</th></tr></thead>
-                  <tbody>
-                    {list.map((h) => (
-                      <tr key={h.holeId} className={selected?.holeId === h.holeId ? 'is-open' : ''}>
-                        <td className="id"><button className="sa-idlink" aria-current={selected?.holeId === h.holeId} onClick={() => open(h.holeId)}>{h.holeId}</button></td>
-                        <td><StatusChip status={h.status} short /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!loading && list.length === 0 && <p className="sa-muted" style={{ margin: 0, padding: 24, textAlign: 'center' }}>No hole matches these filters. Clear filters to see them all.</p>}
-              </div>
-            </section>
-          </div>
-        )}
-        <div className="tw-formslot">
+        <div className="flex min-h-split flex-1 gap-4 max-lg:flex-col">
+          <aside aria-label="Holes" className="flex w-filter-panel flex-none flex-col overflow-hidden rounded-lg border border-solid border-gray-200 bg-white max-lg:max-h-list-stacked max-lg:w-full">
+            <HoleFilters filters={filters} onChange={setFilters} />
+            <HoleList holes={holes} isLoading={isLoading} selectedId={selected?.holeId ?? null} onOpen={openHole} />
+          </aside>
           {hole ? (
             <HoleForm
               hole={hole} onChange={setHole} issues={issues}
-              context={selected?.holeId === 'new' ? 'staging' : 'acquire'}
-              savedStatus={savedStatus} isSupervisor={me.isSupervisor} dirty={dirty} busy={busy}
-              saveLabel={selected?.holeId === 'new' ? 'Check and import' : undefined}
-              onSave={save}
-              onValidate={() => changeStatus('validate')}
+              context={isNew ? 'staging' : 'acquire'}
+              savedStatus={savedStatus} isSupervisor={me.isSupervisor} dirty={isDirty} busy={isBusy}
+              saveLabel={isNew ? 'Check and import' : undefined}
+              onSave={() => void saveHole()}
+              onValidate={isNew ? undefined : () => changeStatus('validate')}
               onRollback={() => changeStatus('rollback')}
-              onImportGtn={selected?.holeId === 'new' ? undefined : () => setGtnOpen(true)}
+              onImportGtn={isNew ? undefined : () => setIsGtnImportOpen(true)}
             />
           ) : (
-            <div className="sa-split__detail" style={{ alignItems: 'center', justifyContent: 'center', padding: 48 }}>
-              <p className="sa-muted" style={{ margin: 0 }}>Pick a hole in the list to open its form.</p>
-            </div>
+            <section className="sa-split__detail items-center justify-center border-gray-200 p-12 shadow-none">
+              <p className="sa-muted m-0">Pick a hole in the list to open its form.</p>
+            </section>
           )}
         </div>
-      </div>
+
+        {pendingDiscard && (
+          <ConfirmDialog
+            title="Discard your changes?"
+            description={`Your unsaved edits to ${isNew ? 'the new drillhole' : hole?.holeId ?? 'this hole'} will be lost. This cannot be undone.`}
+            confirmLabel="Discard changes"
+            destructive
+            onConfirm={() => { const action = pendingDiscard; setPendingDiscard(null); action(); }}
+            onCancel={() => setPendingDiscard(null)}
+          />
+        )}
+      </SheetsLook.Provider>
 
       {conflict && <ConflictDialog mine={conflict.mine} theirs={conflict.theirs} onKeepMine={keepMine} onKeepTheirs={keepTheirs} onClose={() => setConflict(null)} />}
-      {gtnOpen && <GtnImportDialog onClose={() => setGtnOpen(false)} onDone={async (s) => {
-        setNotice({ kind: s.issues.some((i) => i.level === 'error') ? 'warning' : 'success', text: `GTN import: ${s.holesWritten} holes updated.` });
-        if (hole && selected?.holeId !== 'new') await openFresh(hole.holeId);
-      }} />}
+      {isGtnImportOpen && <GtnImportDialog onClose={() => setIsGtnImportOpen(false)} onDone={onGtnImported} />}
     </>
   );
 }

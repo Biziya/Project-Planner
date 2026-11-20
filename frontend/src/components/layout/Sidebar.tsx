@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import type { Me } from '../../api/api';
 import { APP_VERSION } from '../../appInfo';
 import type { ApiStatus } from '../../hooks/useApiStatus';
@@ -18,9 +19,11 @@ interface SidebarProps {
   status: ApiStatus;
   collapsed: boolean;
   onToggle: () => void;
+  /** Called on a page-link click; may call preventDefault (e.g. to ask about unsaved changes first). */
+  onNavigate?: (e: MouseEvent<HTMLAnchorElement>, target: Page) => void;
 }
 
-export function Sidebar({ page, me, status, collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ page, me, status, collapsed, onToggle, onNavigate }: SidebarProps) {
   const role = me ? (me.isSupervisor ? 'Supervisor' : 'User') : null;
   const statusLabel = STATUS_LABEL[status];
 
@@ -43,6 +46,7 @@ export function Sidebar({ page, me, status, collapsed, onToggle }: SidebarProps)
           key={p.id}
           className={`sa-nav__item${page === p.id ? ' is-active' : ''}`}
           href={`#${p.id}`}
+          onClick={onNavigate && ((e) => onNavigate(e, p.id))}
           aria-current={page === p.id ? 'page' : undefined}
           aria-label={collapsed ? p.label : undefined}
           title={collapsed ? p.label : undefined}

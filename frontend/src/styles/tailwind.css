@@ -1,0 +1,4 @@
+/* Tailwind utilities. Loaded last so a utility wins over a design-system rule of the same strength. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

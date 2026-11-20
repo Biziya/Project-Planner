@@ -40,7 +40,24 @@
   --warning-light: #fcf1dd;
   --danger: #c0352b;
   --danger-light: #fbe9e7;
-  --focus: var(--primary-strong);
+  --focus: #1a73e8;   /* Google blue, same as `gblue` in tailwind.config.js (was the copper --primary-strong) */
+  /* Buttons: fixed colours, independent of the theme palette */
+  --btn-primary-bg: #2f3337;
+  --btn-primary-bg-hover: #1e2124;
+  --btn-primary-ink: #ffffff;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-hover-bg: #f1f1f3;
+  --btn-secondary-border: #d6d6da;
+  --btn-secondary-hover-border: #9a9ea6;
+  --btn-secondary-ink: #2a2d33;
+  --btn-icon-ink: #5b6472;
+  --btn-danger-bg: #c0352b;
+  --btn-danger-bg-hover: #a12b22;
+  --btn-danger-ink: #ffffff;
+  --btn-focus: #2f3337;
+  --btn-disabled-bg: #eeeef0;
+  --btn-disabled-ink: #8a8f98;
+  --btn-disabled-border: #e2e2e6;
   --section-blue: #4471c3;
   --section-blue-on: var(--ink-inverse);
   --section-blue-light: #ece6f8;

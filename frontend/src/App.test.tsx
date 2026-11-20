@@ -37,24 +37,26 @@ describe('App shell', () => {
     expect(screen.queryByText('Program', { exact: true })).not.toBeInTheDocument();
   });
 
-  it('puts the help button on the same row as Hide list and New drillhole', async () => {
+  it('puts New drillhole and Help (far right) on one row', async () => {
     render(<App />);
 
     const help = await screen.findByRole('button', { name: 'Help' });
+    expect(help).toHaveAttribute('title', 'Help');
     const actions = help.closest('.sa-pagehead__actions');
-    if (!(actions instanceof HTMLElement)) throw new Error('help button is not in the page head');
-    expect(within(actions).getByRole('button', { name: 'Hide list' })).toBeInTheDocument();
+    if (!(actions instanceof HTMLElement)) throw new Error('Help is not in the page head');
     expect(within(actions).getByRole('button', { name: /New drillhole/ })).toBeInTheDocument();
+    expect(actions.lastElementChild).toBe(help);
 
     await userEvent.click(help);
     expect(screen.getByRole('dialog', { name: 'Help: Edit program' })).toBeInTheDocument();
   });
 
-  it('shows the help button on the Import page too', async () => {
+  it('reaches Help on the Import page with the keyboard only', async () => {
     window.location.hash = '#import';
     render(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Help' }));
+    (await screen.findByRole('button', { name: 'Help' })).focus();
+    await userEvent.keyboard('{Enter}');
 
     expect(screen.getByRole('dialog', { name: 'Help: Import program' })).toBeInTheDocument();
   });

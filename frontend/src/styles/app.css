@@ -3,20 +3,12 @@ html, body, #root { height: 100%; margin: 0; }
 .tw-app { height: 100%; }
 .tw-app .sa-shell { height: 100%; }
 
-/* Edit program: list + form fill the page height */
-.tw-split { flex: 1; min-height: 520px; }
-.tw-filtercol { flex-direction: column; align-items: stretch; flex-wrap: nowrap; padding: var(--space-3); }
-.tw-filtercol .sa-field { width: auto; }
-.tw-formslot { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-.tw-form { height: 100%; }
-.tw-form--modal { width: 100%; max-width: none; height: auto; }
-.tw-form--modal .sa-detail__body { overflow: visible; }
-
-/* Form sections: header and coordinates side by side when there is room */
-.tw-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: var(--space-4); }
-.tw-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-.tw-grid--wide { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .sa-table .sa-input { height: var(--size-control-sm); }
+
+/* Fields: the frame around the control shows focus (blue border + soft ring), so the control itself gets no
+   outline. Without this, the design system's `.sa :focus-visible` draws a second outline inside the frame. */
+.sa input:not([type="checkbox"]):not([type="radio"]):focus-visible, .sa select:focus-visible, .sa textarea:focus-visible { outline: none; }
+.sa-input:not(.is-invalid):not(.is-readonly):focus-within { border-color: var(--focus); box-shadow: 0 0 0 2px rgb(26 115 232 / 0.2); }
 
 /* Pop-ups */
 .tw-backdrop { position: fixed; inset: 0; z-index: 20; overflow: auto; align-items: flex-start; }
@@ -25,11 +17,7 @@ html, body, #root { height: 100%; margin: 0; }
 .sa-tabs button, .sa-seg button { border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
 a.sa-nav__item { text-decoration: none; }
 .sa-idlink { border: 0; background: none; padding: 0; font: inherit; font-family: var(--font-mono); color: var(--primary-strong); text-decoration: underline; cursor: pointer; }
-.tw-menuitem { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--space-2) var(--space-3); border: 0; border-radius: var(--radius-md);
-  background: none; color: var(--ink); font: 600 14px/20px var(--font-sans); text-align: left; text-decoration: none; cursor: pointer; width: 100%; }
-.tw-menuitem:hover { background: var(--primary-light); }
 .tw-rowhead { position: static !important; background: none !important; color: var(--ink) !important; text-align: left; }
-.sa-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); }
 /* Sidebar: name + collapse button, user, status and version */
 .tw-nav { transition: width 0.15s ease; }
 .tw-nav__toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); align-self: stretch;
@@ -61,25 +49,26 @@ a.sa-nav__item { text-decoration: none; }
 .tw-dot--online { background: var(--success); box-shadow: 0 0 0 2px var(--success-light); }
 .tw-dot--offline { background: var(--danger); box-shadow: 0 0 0 2px var(--danger-light); }
 
-/* Buttons: softer borders, clear hover, press and keyboard focus */
-.sa-btn { transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease; }
+/* Buttons: own fixed colours (--btn-* in tokens.css), not the theme palette */
+.sa-btn { transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease; }
 .sa-btn:active { transform: translateY(1px); }
-.sa-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.sa-btn--primary { box-shadow: 0 1px 2px rgba(38,38,42,0.18); }
-.sa-btn--primary:hover { background: var(--primary-strong); box-shadow: 0 2px 6px rgba(38,38,42,0.22); }
-.sa-btn--secondary { border-color: var(--line); color: var(--ink); }
-.sa-btn--secondary:hover { border-color: var(--primary); color: var(--primary-strong); background: var(--primary-light); }
-.sa-btn--tertiary:hover { color: var(--primary-strong); background: var(--primary-light); }
-.sa-btn--danger:hover { filter: brightness(0.92); }
-.sa-btn--icon { border-color: var(--line); color: var(--ink-muted); }
-.sa-btn--icon:hover { background: var(--surface-sunken); border-color: var(--primary-strong); color: var(--primary-strong); }
-.sa-btn:disabled, .sa-btn[disabled], .sa-btn.is-disabled { box-shadow: none; transform: none; filter: none; }
-.sa-btn:disabled:hover, .sa-btn[disabled]:hover { background: var(--surface-sunken); color: var(--ink-muted); border-color: var(--line); }
-.tw-help svg { width: 18px; height: 18px; stroke-width: 1.75; }
+.sa-btn:focus-visible { outline: 2px solid var(--btn-focus); outline-offset: 2px; }
+.sa-btn--primary { background: var(--btn-primary-bg); color: var(--btn-primary-ink); box-shadow: 0 1px 2px rgba(30,33,36,0.18); }
+.sa-btn--primary:hover { background: var(--btn-primary-bg-hover); box-shadow: 0 2px 6px rgba(30,33,36,0.22); }
+.sa-btn--secondary { background: var(--btn-secondary-bg); border-color: var(--btn-secondary-border); color: var(--btn-secondary-ink); }
+.sa-btn--secondary:hover { background: var(--btn-secondary-hover-bg); border-color: var(--btn-secondary-hover-border); }
+.sa-btn--tertiary { background: transparent; color: var(--btn-secondary-ink); }
+.sa-btn--tertiary:hover { background: var(--btn-secondary-hover-bg); }
+.sa-btn--danger { background: var(--btn-danger-bg); color: var(--btn-danger-ink); }
+.sa-btn--danger:hover { background: var(--btn-danger-bg-hover); }
+.sa-btn--icon { background: var(--btn-secondary-bg); border-color: var(--btn-secondary-border); color: var(--btn-icon-ink); }
+.sa-btn--icon:hover { background: var(--btn-secondary-hover-bg); border-color: var(--btn-secondary-hover-border); color: var(--btn-secondary-ink); }
+.sa-btn:disabled, .sa-btn[disabled], .sa-btn.is-disabled,
+.sa-btn:disabled:hover, .sa-btn[disabled]:hover, .sa-btn.is-disabled:hover {
+  background: var(--btn-disabled-bg); color: var(--btn-disabled-ink); border-color: var(--btn-disabled-border); box-shadow: none; transform: none; }
 
 /* Help dialog */
 .tw-help__list { margin: 0 0 var(--space-4); padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
 
 .tw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-@media (max-width: 1100px) { .tw-split { flex-direction: column; } .sa-split__list { width: 100% !important; } }

@@ -1,27 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, type HoleStatus, type LookupItem } from '../api/api';
+import { Icon } from './Icon';
+import { Select } from './Select';
 
-// ---------------------------------------------------------------- icons (16 px, stroke)
-const paths: Record<string, string> = {
-  list: 'M2.5 4h11M2.5 8h11M2.5 12h11',
-  download: 'M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13.5h10',
-  plus: 'M8 3v10M3 8h10',
-  close: 'M4 4l8 8M12 4l-8 8',
-  check: 'M3 8.5l3 3 7-7',
-  search: 'M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zM10.5 10.5L14 14',
-  chevron: 'M4 6l4 4 4-4',
-  send: 'M2.5 8h9M8 4.5L11.5 8 8 11.5M13.5 3v10',
-  trash: 'M3 4.5h10M6.5 4.5V3h3v1.5M5 4.5l.5 8.5h5l.5-8.5',
-  lock: 'M3.5 7h9v6.5h-9zM5.5 7V5.5a2.5 2.5 0 0 1 5 0V7',
-  chevronsLeft: 'M8 4L4 8l4 4M12.5 4l-4 4 4 4',
-  chevronsRight: 'M8 4l4 4-4 4M3.5 4l4 4-4 4',
-  help: 'M5.5 5.75a2.5 2.5 0 1 1 3.6 2.25c-.7.35-1.1.9-1.1 1.6v.75M8 12.5v.25',
-};
-export const Icon = ({ name }: { name: keyof typeof paths }) => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={paths[name]} />
-  </svg>
-);
+export { Icon } from './Icon';
 
 // ---------------------------------------------------------------- status chip
 const statusClass: Record<HoleStatus, string> = {
@@ -32,16 +14,6 @@ export const StatusChip = ({ status, short }: { status: HoleStatus; short?: bool
     {short ? status.replace('PROGRAM_TOVALIDATE', 'TO VALIDATE').replace('PROGRAM_VALIDATED', 'VALIDATED') : status}
   </span>
 );
-
-// ---------------------------------------------------------------- banners
-export type Notice = { kind: 'success' | 'danger' | 'warning'; text: string } | null;
-export const Banner = ({ notice, onClose }: { notice: Notice; onClose: () => void }) =>
-  notice ? (
-    <div role={notice.kind === 'danger' ? 'alert' : 'status'} className={`sa-note sa-note--${notice.kind}`} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <span style={{ flex: 1 }}>{notice.text}</span>
-      <button className="sa-btn sa-btn--tertiary sa-btn--sm" onClick={onClose}>Dismiss</button>
-    </div>
-  ) : null;
 
 // ---------------------------------------------------------------- modal
 export function Modal({ title, onClose, children, footer, width }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; width?: number }) {
@@ -81,21 +53,16 @@ export function useLookup(id: string | undefined, parent?: string | null) {
   return items;
 }
 
-export function LookupSelect({ id, parent, value, onChange, label, invalid, disabled }: {
+export function LookupSelect({ id, parent, value, onChange, label, invalid, disabled, look }: {
   id: string; parent?: string | null; value: string | null | undefined; onChange: (v: string | null) => void; label: string; invalid?: boolean; disabled?: boolean;
+  look?: 'field' | 'cell';
 }) {
   const items = useLookup(id, parent);
-  const known = !value || items.some((i) => i.code === value);
-  return (
-    <span className={`sa-input${invalid ? ' is-invalid' : ''}${disabled ? ' is-readonly' : ''}`}>
-      <select aria-label={label} value={value ?? ''} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
-        <option value="">Select…</option>
-        {!known && <option value={value!}>{value}</option>}
-        {items.map((i) => <option key={i.code} value={i.code}>{i.description && i.description !== i.code ? `${i.code} – ${i.description}` : i.code}</option>)}
-      </select>
-    </span>
-  );
+  const options = [
+    { value: '', label: 'Select…' },
+    ...(value && !items.some((i) => i.code === value) ? [{ value, label: value }] : []),
+    ...items.map((i) => ({ value: i.code, label: i.description && i.description !== i.code ? `${i.code} – ${i.description}` : i.code })),
+  ];
+  return <Select label={label} value={value ?? ''} options={options} invalid={invalid} disabled={disabled} look={look} onChange={(v) => onChange(v || null)} />;
 }
 
-/** Unsaved-changes guard (spec 4.6). */
-export const confirmDiscard = (dirty: boolean) => !dirty || window.confirm('Discard your changes?');

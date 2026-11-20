@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, ApiError, type Hole, type ImportSummary, type SendItem } from '../api/api';
 import { ALL_FIELDS } from '../api/fields';
+import { errorText, toast } from './toast/toast';
 import { LookupSelect, Modal } from './ui';
 
 const show = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
@@ -46,12 +47,17 @@ export function GtnImportDialog({ onClose, onDone }: { onClose: () => void; onDo
   const [mode, setMode] = useState<'replace' | 'add'>('replace');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const run = async () => {
     if (!file) return;
-    setBusy(true); setError(null);
-    try { const r = await api.importGtn(file, mode); setResult(r); onDone(r); }
-    catch (e) { setError(e instanceof ApiError ? e.message : 'Import failed.'); }
+    setBusy(true);
+    try {
+      const r = await api.importGtn(file, mode);
+      setResult(r);
+      const text = `GTN import: ${r.holesWritten} ${r.holesWritten === 1 ? 'hole' : 'holes'} updated${r.issues.length ? ` · ${r.issues.length} messages` : ''}`;
+      if (r.issues.some((i) => i.level.toLowerCase() === 'error')) toast.warning(text); else toast.success(text);
+      onDone(r);
+    }
+    catch (e) { toast.error(errorText(`Could not import ${file.name}`, e)); }
     finally { setBusy(false); }
   };
   return (
@@ -70,7 +76,6 @@ export function GtnImportDialog({ onClose, onDone }: { onClose: () => void; onDo
         </span>
         <span className="caption sa-muted">{mode === 'replace' ? 'The planned GTN rows of each hole in the file are deleted, then replaced by the file rows.' : 'New rows are added; a hole is refused if they overlap its existing intervals.'}</span>
       </div>
-      {error && <div className="sa-note sa-note--danger">{error}</div>}
       {result && <ImportIssues summary={result} />}
     </Modal>
   );

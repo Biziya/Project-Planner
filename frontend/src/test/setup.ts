@@ -19,6 +19,12 @@ for (const name of ['localStorage', 'sessionStorage'] as const) {
   if (!usable) Object.defineProperty(window, name, { configurable: true, value: new MemoryStorage() });
 }
 
+/** jsdom has no ResizeObserver; Headless UI menus with an `anchor` use it to place the panel. Layout is not tested here. */
+if (!('ResizeObserver' in window)) {
+  class NoopResizeObserver { observe() {} unobserve() {} disconnect() {} }
+  Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: NoopResizeObserver });
+}
+
 afterEach(() => {
   cleanup();
 });
