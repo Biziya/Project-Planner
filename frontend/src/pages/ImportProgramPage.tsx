@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError, emptyHole, type Hole, type ImportSummary, type Issue, type Me, type SendItem, type StagedHole } from '../api/api';
 import { HoleForm } from '../components/HoleForm';
+import { HelpButton } from '../components/layout/HelpButton';
 import { GtnImportDialog, ImportReportDialog, PrefillDialog, SendResultDialog } from '../components/Dialogs';
 import { Banner, Icon, confirmDiscard, type Notice } from '../components/ui';
 
@@ -94,7 +95,6 @@ export function ImportProgramPage({ me }: { me: Me }) {
     <>
       <div className="sa-pagehead" style={{ flexWrap: 'wrap' }}>
         <div>
-          <span className="overline sa-muted">Program</span>
           <h1>Import program</h1>
           <p>Holes in Preparation, not yet in acQuire. Create, import and correct them, then send; they become PROJECT at the first import.</p>
         </div>
@@ -104,6 +104,7 @@ export function ImportProgramPage({ me }: { me: Me }) {
           <input ref={fileInput} type="file" accept=".xlsx" className="tw-sr" onChange={(e) => importExcel(e.target.files?.[0])} />
           <button className="sa-btn sa-btn--secondary" aria-expanded={exportOpen} onClick={() => setExportOpen(!exportOpen)}>Export Excel<Icon name="chevron" /></button>
           <button className="sa-btn sa-btn--secondary" onClick={() => setDialog('gtn')}>Import GTN (Excel)</button>
+          <HelpButton page="import" />
           {exportOpen && (
             <div className="sa-popover" style={{ top: 'calc(var(--size-control-md) + 8px)', right: 0, width: 340 }} onMouseLeave={() => setExportOpen(false)}>
               <div className="sa-popover__head"><b>Export Excel</b></div>

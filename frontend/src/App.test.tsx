@@ -29,18 +29,40 @@ describe('App shell', () => {
     expect(screen.queryByText('Mock data')).not.toBeInTheDocument();
   });
 
-  it('has a help button in the top bar', async () => {
+  it('has no top bar and no "Program" overline above the page title', async () => {
     render(<App />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Help' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Edit program' })).toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(screen.queryByText('Program', { exact: true })).not.toBeInTheDocument();
+  });
 
+  it('puts the help button on the same row as Hide list and New drillhole', async () => {
+    render(<App />);
+
+    const help = await screen.findByRole('button', { name: 'Help' });
+    const actions = help.closest('.sa-pagehead__actions');
+    if (!(actions instanceof HTMLElement)) throw new Error('help button is not in the page head');
+    expect(within(actions).getByRole('button', { name: 'Hide list' })).toBeInTheDocument();
+    expect(within(actions).getByRole('button', { name: /New drillhole/ })).toBeInTheDocument();
+
+    await userEvent.click(help);
     expect(screen.getByRole('dialog', { name: 'Help: Edit program' })).toBeInTheDocument();
+  });
+
+  it('shows the help button on the Import page too', async () => {
+    window.location.hash = '#import';
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Help' }));
+
+    expect(screen.getByRole('dialog', { name: 'Help: Import program' })).toBeInTheDocument();
   });
 
   it('collapses and expands the sidebar, and remembers the choice', async () => {
     const { unmount } = render(<App />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+    await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
     expect(screen.queryByText('Techno Wells')).not.toBeInTheDocument();
     expect(window.localStorage.getItem(SIDEBAR_KEY)).toBe('true');
 
@@ -59,7 +81,7 @@ describe('App shell', () => {
     try {
       render(<App />);
 
-      await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+      await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
 
       expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
     } finally {

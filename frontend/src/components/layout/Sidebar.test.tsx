@@ -65,9 +65,18 @@ describe('Sidebar', () => {
   it('calls onToggle when the collapse button is pressed', async () => {
     const { onToggle } = renderSidebar();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+    await userEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }));
 
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('makes the "Techno Wells" title part of the collapse button', async () => {
+    const { onToggle } = renderSidebar();
+
+    await userEvent.click(screen.getByText('Techno Wells'));
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /collapse sidebar/i })).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('when collapsed, hides the labels but keeps the links and status accessible', () => {

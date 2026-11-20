@@ -15,7 +15,7 @@ const paths: Record<string, string> = {
   lock: 'M3.5 7h9v6.5h-9zM5.5 7V5.5a2.5 2.5 0 0 1 5 0V7',
   chevronsLeft: 'M8 4L4 8l4 4M12.5 4l-4 4 4 4',
   chevronsRight: 'M8 4l4 4-4 4M3.5 4l4 4-4 4',
-  help: 'M8 1.75a6.25 6.25 0 1 0 0 12.5 6.25 6.25 0 0 0 0-12.5zM6.25 6.25a1.75 1.75 0 1 1 2.5 1.6c-.5.25-.75.6-.75 1.15v.5M8 11.5v.25',
+  help: 'M5.5 5.75a2.5 2.5 0 1 1 3.6 2.25c-.7.35-1.1.9-1.1 1.6v.75M8 12.5v.25',
 };
 export const Icon = ({ name }: { name: keyof typeof paths }) => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

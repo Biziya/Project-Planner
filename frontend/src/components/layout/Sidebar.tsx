@@ -26,19 +26,17 @@ export function Sidebar({ page, me, status, collapsed, onToggle }: SidebarProps)
 
   return (
     <nav className={`sa-nav tw-nav${collapsed ? ' sa-nav--collapsed' : ''}`} aria-label="Main">
-      <div className="tw-nav__head">
+      <button
+        type="button"
+        className="tw-nav__toggle"
+        onClick={onToggle}
+        aria-label={collapsed ? 'Expand sidebar' : 'Techno Wells, collapse sidebar'}
+        aria-expanded={!collapsed}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
         {!collapsed && <span className="tw-nav__title">Techno Wells</span>}
-        <button
-          type="button"
-          className="tw-nav__toggle"
-          onClick={onToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-expanded={!collapsed}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <Icon name={collapsed ? 'chevronsRight' : 'chevronsLeft'} />
-        </button>
-      </div>
+        <Icon name={collapsed ? 'chevronsRight' : 'chevronsLeft'} />
+      </button>
 
       {PAGES.map((p) => (
         <a

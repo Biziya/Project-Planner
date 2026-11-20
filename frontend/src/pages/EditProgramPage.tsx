@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError, emptyHole, type Hole, type HoleSummary, type Issue, type Me } from '../api/api';
 import { HoleForm } from '../components/HoleForm';
+import { HelpButton } from '../components/layout/HelpButton';
 import { ConflictDialog, GtnImportDialog } from '../components/Dialogs';
 import { Banner, Icon, LookupSelect, StatusChip, confirmDiscard, type Notice } from '../components/ui';
 
@@ -125,13 +126,13 @@ export function EditProgramPage({ me }: { me: Me }) {
     <>
       <div className="sa-pagehead" style={{ flexWrap: 'wrap' }}>
         <div>
-          <span className="overline sa-muted">Program</span>
           <h1>Edit program</h1>
           <p>Holes in acQuire in PROJECT or PROGRAM_TOVALIDATE. Pick one on the left; its form fills the rest of the page.</p>
         </div>
         <div className="sa-pagehead__actions">
           <button className="sa-btn sa-btn--secondary" aria-expanded={listOpen} onClick={() => setListOpen(!listOpen)}>{listOpen ? 'Hide list' : 'Show list'}</button>
           <button className="sa-btn sa-btn--primary" onClick={startNew}><Icon name="plus" />New drillhole</button>
+          <HelpButton page="edit" />
         </div>
       </div>
 

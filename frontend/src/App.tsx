@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError, type Me } from './api/api';
-import { HelpButton } from './components/layout/HelpButton';
 import { Sidebar, type Page } from './components/layout/Sidebar';
 import { useApiStatus } from './hooks/useApiStatus';
 import { EditProgramPage } from './pages/EditProgramPage';
@@ -46,9 +45,6 @@ export default function App() {
       <div className="sa-shell">
         <Sidebar page={page} me={me} status={status} collapsed={collapsed} onToggle={toggleSidebar} />
         <div className="sa-main">
-          <header className="sa-topbar tw-topbar">
-            <HelpButton page={page} />
-          </header>
           <main className="sa-content">
             {error && <div role="alert" className="sa-note sa-note--danger">{error}</div>}
             {me && (page === 'edit' ? <EditProgramPage me={me} /> : <ImportProgramPage me={me} />)}
