@@ -30,7 +30,34 @@ a.sa-nav__item { text-decoration: none; }
 .tw-menuitem:hover { background: var(--primary-light); }
 .tw-rowhead { position: static !important; background: none !important; color: var(--ink) !important; text-align: left; }
 .sa-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); }
-.tw-mockbadge { align-self: flex-start; margin: 0 var(--space-3) var(--space-3); }
+/* Sidebar: name + collapse button, user, status and version */
+.tw-nav { transition: width 0.15s ease; }
+.tw-nav__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); height: 40px; padding: 0 var(--space-1) 0 var(--space-2);
+  margin-bottom: var(--space-4); }
+.tw-nav__title { font: 600 15px/22px var(--font-sans); white-space: nowrap; }
+.tw-nav__toggle { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0; border: 0;
+  border-radius: var(--radius-md); background: none; color: var(--nav-ink-muted); cursor: pointer; }
+.tw-nav__toggle:hover { background: var(--surface-nav-active); color: var(--ink-inverse); }
+.tw-nav__toggle:focus-visible, .tw-nav .sa-nav__item:focus-visible { outline: 2px solid var(--ink-inverse); outline-offset: 2px; }
+.tw-nav__toggle svg { width: var(--size-icon); height: var(--size-icon); }
+.sa-nav--collapsed .tw-nav__head { justify-content: center; padding: 0; }
+.sa-nav--collapsed .sa-nav__item { justify-content: center; padding: 0; width: 40px; }
+.tw-nav__user { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2); }
+.tw-nav__role { font: 600 13px/18px var(--font-sans); color: var(--ink-inverse); }
+.tw-nav__name { font: 400 13px/18px var(--font-sans); color: var(--nav-ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw-nav__foot { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2); padding-top: var(--space-3);
+  border-top: var(--border-hairline) solid var(--surface-nav-active); }
+.sa-nav--collapsed .tw-nav__foot { align-items: center; padding: var(--space-3) 0 var(--space-2); align-self: stretch; }
+.tw-nav__status { display: inline-flex; align-items: center; gap: var(--space-2); font: 400 13px/18px var(--font-sans); color: var(--ink-inverse); }
+.tw-nav__version { font: 400 12px/16px var(--font-mono); color: var(--nav-ink-muted); }
+.tw-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--nav-ink-muted); }
+.tw-dot--online { background: var(--success); box-shadow: 0 0 0 2px var(--success-light); }
+.tw-dot--offline { background: var(--danger); box-shadow: 0 0 0 2px var(--danger-light); }
+
+/* Top bar: help button on the right */
+.tw-topbar { justify-content: flex-end; }
+.tw-help__list { margin: 0 0 var(--space-4); padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+
 .tw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (max-width: 1100px) { .tw-split { flex-direction: column; } .sa-split__list { width: 100% !important; } }

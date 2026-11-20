@@ -23,7 +23,6 @@ npm run dev          # http://localhost:5173 (mock data)
 ```
 
 - **Mock data:** `npm run dev` uses `.env.mock` (`VITE_USE_MOCK=true`). The app then works on in-memory sample holes and drafts from [frontend/src/services/mock](frontend/src/services/mock/README.md).
-- **Badge:** a **Mock data** badge shows in the sidebar while mock data is on.
 - **Resets:** changes are lost when the page reloads.
 - **Not available with mock data:** Excel import and export.
 

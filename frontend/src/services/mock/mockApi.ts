@@ -42,6 +42,7 @@ export function createMockApi(store: MockStore = createMockStore(), delayMs = 15
   };
 
   return {
+    health: () => wait({ status: 'ok', database: 'mock' }),
     me: () => wait({ name: 'mock.user', isSupervisor: true }),
 
     lookup: (id, parent) => {

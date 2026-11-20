@@ -1,5 +1,5 @@
 // The real API client: talks to the TechnoWells backend over HTTP.
-import type { Hole, HoleSummary, ImportSummary, Issue, KeySuggestion, LookupItem, Me, SaveResponse, SendItem, StagedHole } from './api';
+import type { Health, Hole, HoleSummary, ImportSummary, Issue, KeySuggestion, LookupItem, Me, SaveResponse, SendItem, StagedHole } from './api';
 import { ApiError } from './apiError';
 
 /** API base URL: VITE_API_BASE_URL in .env (e.g. https://api.example.local/api), otherwise same server (/api). */
@@ -34,6 +34,7 @@ const q = (params: Record<string, string | number | null | undefined>) => {
 };
 
 export const httpApi = {
+  health: () => call<Health>('GET', '/health'),
   me: () => call<Me>('GET', '/me'),
   lookup: (id: string, parent?: string | null) => call<LookupItem[]>('GET', `/lookups/${id}${q({ parent })}`),
   suggestKey: () => call<KeySuggestion>('GET', '/keys/suggestion'),

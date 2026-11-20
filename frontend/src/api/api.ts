@@ -33,6 +33,7 @@ export interface SendItem { stagingId: string; holeId: string; outcome: 'Importe
 export interface ImportRowIssue { row: number; holeId: string | null; field: string; rule: string; level: string; message: string }
 export interface ImportSummary { rowsRead: number; holesWritten: number; issues: ImportRowIssue[] }
 export interface Me { name: string; isSupervisor: boolean }
+export interface Health { status: string; database: string }
 export interface KeySuggestion { suggested: number; maxInAcquire: number | null; maxInStaging: number | null; acquireIncluded: boolean }
 
 export { ApiError } from './apiError';

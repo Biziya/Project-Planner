@@ -5,6 +5,10 @@ import { createMockStore } from './mockData';
 const freshApi = () => createMockApi(createMockStore(), 0);
 
 describe('mock API', () => {
+  it('reports itself healthy, so the sidebar shows Online', async () => {
+    await expect(freshApi().health()).resolves.toEqual({ status: 'ok', database: 'mock' });
+  });
+
   it('lists the sample holes, without FAILED ones', async () => {
     const holes = await freshApi().listHoles({});
 
